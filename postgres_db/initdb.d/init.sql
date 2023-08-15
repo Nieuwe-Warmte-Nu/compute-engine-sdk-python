@@ -6,7 +6,7 @@
 
 CREATE TYPE job_status AS ENUM ('registered', 'running', 'finished', 'error', 'stopped');
 
-CREATE TABLE jobs (
+CREATE TABLE job (
     job_id uuid PRIMARY KEY,
     job_name text NOT NULL,
     map_editor_user text,
