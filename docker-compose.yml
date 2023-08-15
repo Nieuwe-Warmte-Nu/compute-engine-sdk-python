@@ -1,0 +1,36 @@
+version: "3.8"
+
+networks:
+    nwn:
+
+volumes:
+  db-data:
+
+services:
+    rabbitmq:
+        image: rabbitmq:3.12-management
+        restart: unless-stopped
+        environment:
+            - RABBITMQ_DEFAULT_USER=${RABBITMQ_ROOT_USER}
+            - RABBITMQ_DEFAULT_PASS=${RABBITMQ_ROOT_PASSWORD}
+        ports:
+            - '5672:5672'
+            - '15672:15672'
+        networks:
+            - nwn
+
+    postgres_db:
+        image: postgres:15.4
+        restart: unless-stopped
+        volumes:
+            - "./postgres_db/initdb.d/:/docker-entrypoint-initdb.d"
+            - "db-data:/var/lib/postgresql/data/"
+        ports:
+            - '5432:5432'
+        networks:
+            - nwn
+        environment:
+            PGDATA: /var/lib/postgresql/data
+            POSTGRES_DB: ${POSTGRES_DATABASE_NAME}
+            POSTGRES_USER: ${POSTGRES_ROOT_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_ROOT_PASSWORD}
