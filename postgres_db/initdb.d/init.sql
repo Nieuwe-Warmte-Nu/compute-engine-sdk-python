@@ -19,5 +19,5 @@ CREATE TABLE job (
     added_at timestamp NOT NULL,
     running_at timestamp,
     stopped_at timestamp,
-    error_logs text
+    logs text
 );

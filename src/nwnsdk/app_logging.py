@@ -18,8 +18,9 @@
 import logging
 import sys
 from enum import Enum
+from typing import Optional, Dict
 
-LOG_LEVEL: "LogLevel"
+CONFIGURED_LOGGERS: Dict[str, logging.Logger] = {}
 
 
 class LogLevel(Enum):
@@ -61,7 +62,7 @@ class LogLevel(Enum):
         return result
 
 
-def setup_logging(log_level: LogLevel) -> None:
+def setup_logging(log_level: LogLevel, logger_name: Optional[str]) -> logging.Logger:
     """
     Initializes logging.
 
@@ -70,16 +71,18 @@ def setup_logging(log_level: LogLevel) -> None:
     log_level : LogLevel
         The LogLevel for this logger.
     """
-    global LOG_LEVEL
-    root_logger = logging.getLogger()
+    logger = logging.getLogger(logger_name)
 
-    print("Will use log level:", log_level)
-    root_logger.setLevel(log_level.value)
-    LOG_LEVEL = log_level
+    if logger_name not in CONFIGURED_LOGGERS:
+        print(f"Will use log level {log_level} for logger {logger_name}")
+        logger.setLevel(log_level.value)
 
-    log_handler = logging.StreamHandler(sys.stdout)
-    formatter = logging.Formatter(
-        fmt="%(asctime)s [%(threadName)s][%(filename)s:%(lineno)d]" "[%(levelname)s]: %(message)s"
-    )
-    log_handler.setFormatter(formatter)
-    root_logger.addHandler(log_handler)
+        log_handler = logging.StreamHandler(sys.stdout)
+        formatter = logging.Formatter(
+            fmt="%(asctime)s [%(threadName)s][%(filename)s:%(lineno)d]" "[%(levelname)s]: %(message)s"
+        )
+        log_handler.setFormatter(formatter)
+        logger.addHandler(log_handler)
+        CONFIGURED_LOGGERS[logger_name] = logger
+
+    return logger

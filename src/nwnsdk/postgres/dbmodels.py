@@ -1,8 +1,22 @@
+from enum import Enum
+
 import sqlalchemy as db
 
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
+
+
+class JobStatus(Enum):
+    REGISTERED = 'registered'
+    RUNNING = 'running'
+    FINISHED = 'finished'
+    ERROR = 'error'
+    STOPPED = 'stopped'
+
+
+class WorkflowType(Enum):
+    GROWTH_OPTIMIZER = 'growth_optimizer'
 
 
 class Job(Base):
@@ -19,4 +33,4 @@ class Job(Base):
     added_at = db.Column(db.DateTime(timezone=True), nullable=False)
     running_at = db.Column(db.DateTime(timezone=True))
     stopped_at = db.Column(db.DateTime(timezone=True))
-    error_logs = db.Column(db.DateTime(timezone=True))
+    logs = db.Column(db.DateTime(timezone=True))
