@@ -24,8 +24,12 @@ docker-compose up
 
 Example usage
 ```python
+from uuid import uuid4
+
 from nwnsdk.nwn_client import NwnClient
 
 rabbitmq_client = NwnClient('localhost')
-rabbitmq_client.start_work_flow('growth_optimizer', 'test_job', 'esdl_string', 'test_user')
+job_id: uuid4 = rabbitmq_client.start_work_flow('growth_optimizer', 'test_job', 'esdl_string', 'test_user')
+
+print(job_id)
 ```
