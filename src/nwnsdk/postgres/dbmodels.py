@@ -1,8 +1,10 @@
 from enum import Enum
 
 import sqlalchemy as db
-
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.dialects.postgresql import UUID
+
+from nwnsdk import WorkFlowType
 
 Base = declarative_base()
 
@@ -18,11 +20,11 @@ class JobStatus(Enum):
 class Job(Base):
     __tablename__ = "job"
 
-    job_id = db.Column(db.UUID, primary_key=True)
+    job_id = db.Column(UUID(as_uuid=True), primary_key=True)
     job_name = db.Column(db.String, nullable=False)
-    work_flow_type = db.Column(db.String, nullable=False)
-    map_editor_user = db.Column(db.String)
-    status = db.Column(db.String, nullable=False)
+    work_flow_type = db.Column(db.Enum(WorkFlowType), nullable=False)
+    user_name = db.Column(db.String)
+    status = db.Column(db.Enum(JobStatus), nullable=False)
     input_config = db.Column(db.String)
     input_esdl = db.Column(db.String, nullable=False)
     output_esdl = db.Column(db.String)

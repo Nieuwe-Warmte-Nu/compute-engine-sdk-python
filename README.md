@@ -42,7 +42,17 @@ rabbitmq_config = RabbitmqConfig(
     "5678",
 )
 nwn_client = NwnClient(postgres_config, rabbitmq_config)
-job_id: uuid4 = nwn_client.start_work_flow(WorkFlowType.GROWTH_OPTIMIZER, "test_job", "esdl_string", "test_user")
+job_id1: uuid4 = nwn_client.start_work_flow(WorkFlowType.GROWTH_OPTIMIZER, "test_job1", "esdl_string", "test_user")
+job_id2: uuid4 = nwn_client.start_work_flow(WorkFlowType.GROWTH_OPTIMIZER, "test_job2", "esdl_string", "test_user")
+print(job_id1)
 
-print(job_id)
+job1_status = nwn_client.get_job_status(job_id1)
+print(f"job1 status: {job1_status}")
+
+job1 = nwn_client.get_job_details(job_id1)
+print(f"{job1.job_name} input esdl: {job1.input_esdl}")
+
+jobs = nwn_client.get_jobs([job_id1, job_id2])
+print(f"{jobs[1].job_name} added at: {jobs[1].added_at}")
+
 ```

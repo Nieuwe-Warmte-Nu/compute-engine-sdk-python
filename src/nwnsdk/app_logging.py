@@ -70,6 +70,8 @@ def setup_logging(log_level: LogLevel, logger_name: Optional[str]) -> logging.Lo
     ----------
     log_level : LogLevel
         The LogLevel for this logger.
+    logger_name : Optional[str]
+        Name for this logger.
     """
     logger = logging.getLogger(logger_name)
 
