@@ -4,11 +4,13 @@
 
 --CREATE DATABASE nieuwewarmtenu;
 
-CREATE TYPE job_status AS ENUM ('registered', 'running', 'finished', 'error', 'stopped');
+CREATE TYPE work_flow_type AS ENUM ('growth_optimizer');
+CREATE TYPE job_status AS ENUM ('registered', 'running', 'finished', 'error');
 
 CREATE TABLE job (
     job_id uuid PRIMARY KEY,
     job_name text NOT NULL,
+    work_flow_type work_flow_type NOT NULL,
     map_editor_user text,
     status job_status NOT NULL,
     input_config text,

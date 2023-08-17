@@ -21,7 +21,9 @@ class NwnClient:
         self.rabbitmq_client = RabbitmqClient(host)
         self.postgres_client = PostgresClient(host)
 
-    def start_work_flow(self, work_flow_name: str, job_name: str, esdl_str: str, user_name: str):
+    def start_work_flow(self, work_flow_type: str, job_name: str, esdl_str: str, user_name: str) -> uuid4:
         job_id: uuid4 = uuid4()
-        self.rabbitmq_client.send_start_work_flow(job_id, work_flow_name)
-        self.postgres_client.send_input(job_id, job_name, user_name, esdl_str)
+        self.rabbitmq_client.send_start_work_flow(job_id, work_flow_type)
+        self.postgres_client.send_input(job_id, job_name, work_flow_type, user_name, esdl_str)
+
+        return job_id

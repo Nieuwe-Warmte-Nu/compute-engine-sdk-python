@@ -10,6 +10,7 @@ class Job(Base):
 
     job_id = db.Column(db.UUID, primary_key=True)
     job_name = db.Column(db.String, nullable=False)
+    work_flow_type = db.Column(db.String, nullable=False)
     map_editor_user = db.Column(db.String)
     status = db.Column(db.String, nullable=False)
     input_config = db.Column(db.String)

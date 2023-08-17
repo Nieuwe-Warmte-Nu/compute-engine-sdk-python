@@ -9,11 +9,12 @@ class PostgresClient:
     def __init__(self, host: str):
         initialize_db("nwn", host)
 
-    def send_input(self, job_id: uuid4, job_name: str, esdl_str: str, user_name: str):
+    def send_input(self, job_id: uuid4, job_name: str, work_flow_type: str, esdl_str: str, user_name: str):
         with session_scope() as session:
             new_job = Job(
                 job_id=job_id,
                 job_name=job_name,
+                work_flow_type=work_flow_type,
                 map_editor_user=user_name,
                 status="registered",
                 input_esdl=esdl_str,
