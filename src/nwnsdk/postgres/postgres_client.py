@@ -12,8 +12,6 @@ from nwnsdk.postgres.dbmodels import Job, JobStatus
 LOGGER = logging.getLogger("nwnsdk")
 
 
-
-
 class PostgresClient:
     def __init__(self, postgres_config: PostgresConfig):
         initialize_db("nwn", postgres_config)
