@@ -43,10 +43,14 @@ class RabbitmqClient:
         # initialize rabbitmq connection
         LOGGER.info("Connecting to RabbitMQ at %s:%s as user %s", config.host, config.port, config.user_name)
         credentials = pika.PlainCredentials(config.user_name, config.password)
-        parameters = pika.ConnectionParameters(config.host, config.port, "/", credentials)
+        parameters = pika.ConnectionParameters(
+            config.host, config.port, "/", credentials, heartbeat=3600, blocked_connection_timeout=3600
+        )
+
         connection = pika.BlockingConnection(parameters)
 
         self.channel = connection.channel()
+        self.channel.basic_qos(prefetch_size=0, prefetch_count=1)
         self.channel.exchange_declare(exchange=self.rabbitmq_exchange, exchange_type="topic")
         self.queue = self.channel.queue_declare(Queue.StartWorkflowOptimizer.value, exclusive=False).method.queue
         self.channel.queue_bind(self.queue, self.rabbitmq_exchange, routing_key=Queue.StartWorkflowOptimizer.value)
@@ -54,7 +58,7 @@ class RabbitmqClient:
 
     def wait_for_data(self, callbacks: Dict[Queue, PikaCallback]):
         for queue, callback in callbacks.items():
-            self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=True)
+            self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
 
         def stop(signal, frame):
             LOGGER.info("Received signal %s. Stopping..", signal)
