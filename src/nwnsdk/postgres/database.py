@@ -37,6 +37,7 @@ def initialize_db(application_name: str, config: PostgresConfig):
     Initialize the database connection by creating the engine and configuring
     the default session maker.
     """
+    LOGGER.info("Connecting to PostgresDB at %s:%s as user %s", config.host, config.port, config.user_name)
     url = URL.create(
         "postgresql+psycopg2",
         username=config.user_name,
@@ -50,7 +51,7 @@ def initialize_db(application_name: str, config: PostgresConfig):
         url,
         pool_size=20,
         max_overflow=5,
-        echo=False,
+        echo=True,
         connect_args={
             "application_name": application_name,
             "options": "-c lock_timeout=30000 -c statement_timeout=300000",  # 5 minutes

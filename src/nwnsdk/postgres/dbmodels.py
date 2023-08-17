@@ -8,15 +8,11 @@ Base = declarative_base()
 
 
 class JobStatus(Enum):
-    REGISTERED = 'registered'
-    RUNNING = 'running'
-    FINISHED = 'finished'
-    ERROR = 'error'
-    STOPPED = 'stopped'
-
-
-class WorkflowType(Enum):
-    GROWTH_OPTIMIZER = 'growth_optimizer'
+    REGISTERED = "registered"
+    RUNNING = "running"
+    FINISHED = "finished"
+    ERROR = "error"
+    STOPPED = "stopped"
 
 
 class Job(Base):
