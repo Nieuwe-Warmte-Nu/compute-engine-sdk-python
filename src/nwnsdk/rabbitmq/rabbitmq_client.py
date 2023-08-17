@@ -1,24 +1,29 @@
 #!/usr/bin/env python
 
-import os
 import logging
 from uuid import uuid4
 
 import pika
 import json
-import traceback
-from json import JSONDecodeError
 
-LOGGER = logging.getLogger('nwnsdk')
+from pika.adapters.blocking_connection import BlockingChannel
+
+from nwnsdk import RabbitmqConfig
+
+LOGGER = logging.getLogger("nwnsdk")
 
 
 class RabbitmqClient:
-    def __init__(self, host: str):
-        self.rabbitmq_exchange = os.getenv("RABBITMQ_EXCHANGE")
+    rabbitmq_exchange: str
+    channel: BlockingChannel
+    queue: str
+
+    def __init__(self, config: RabbitmqConfig):
+        self.rabbitmq_exchange = config.exchange_name
 
         # initialize rabbitmq connection
-        credentials = pika.PlainCredentials(os.getenv("RABBITMQ_ROOT_USER"), os.getenv("RABBITMQ_ROOT_PASSWORD"))
-        parameters = pika.ConnectionParameters(host, 5672, "/", credentials)
+        credentials = pika.PlainCredentials(config.user_name, config.password)
+        parameters = pika.ConnectionParameters(config.host, config.port, "/", credentials)
         connection = pika.BlockingConnection(parameters)
 
         self.channel = connection.channel()
@@ -40,11 +45,11 @@ class RabbitmqClient:
         LOGGER.info("Waiting for input...")
         self.channel.start_consuming()
 
-    def send_start_work_flow(self, job_id: uuid4, work_flow_name: str):
+    def send_start_work_flow(self, job_id: uuid4, work_flow_type: str):
         # TODO convert to protobuf
         # TODO job_id converted to string for json
-        body = json.dumps({"job_id": str(job_id), "work_flow_name": work_flow_name})
-        self.send_output(f"nwn.start_work_flow", body)
+        body = json.dumps({"job_id": str(job_id)})
+        self.send_output(f"nwn.start_work_flow.{work_flow_type}", body)
 
     def send_output(self, topic: str, message: str):
         body: bytes = message.encode("utf-8")

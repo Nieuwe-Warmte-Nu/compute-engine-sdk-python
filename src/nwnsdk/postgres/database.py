@@ -1,5 +1,4 @@
 import logging
-import os
 from contextlib import contextmanager
 from typing import Generator
 
@@ -7,7 +6,9 @@ from sqlalchemy import create_engine, orm
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import Session as SQLSession
 
-LOGGER = logging.getLogger(__name__)
+from nwnsdk import PostgresConfig
+
+LOGGER = logging.getLogger("nwnsdk")
 
 session_factory = orm.sessionmaker()
 Session = orm.scoped_session(session_factory)
@@ -16,7 +17,7 @@ Session = orm.scoped_session(session_factory)
 @contextmanager
 def session_scope(bind=None) -> Generator[SQLSession, None, None]:
     """Provide a transactional scope around a series of operations. Ensures that the session is
-    commited and closed. Exceptions raised within the 'with' block using this contextmanager
+    committed and closed. Exceptions raised within the 'with' block using this contextmanager
     should be handled in the with block itself. They will not be caught by the 'except' here."""
     try:
         if bind:
@@ -31,18 +32,18 @@ def session_scope(bind=None) -> Generator[SQLSession, None, None]:
         Session.remove()
 
 
-def initialize_db(application_name: str, host: str):
+def initialize_db(application_name: str, config: PostgresConfig):
     """
     Initialize the database connection by creating the engine and configuring
     the default session maker.
     """
     url = URL.create(
         "postgresql+psycopg2",
-        username=os.getenv("POSTGRES_ROOT_USER"),
-        password=os.getenv("POSTGRES_ROOT_PASSWORD"),
-        host=host,
-        port=os.getenv("POSTGRES_PORT"),
-        database=os.getenv("POSTGRES_DATABASE_NAME"),
+        username=config.user_name,
+        password=config.password,
+        host=config.host,
+        port=config.port,
+        database=config.database_name,
     )
 
     engine = create_engine(
