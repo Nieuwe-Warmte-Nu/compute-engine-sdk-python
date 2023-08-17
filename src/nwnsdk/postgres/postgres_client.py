@@ -63,3 +63,12 @@ class PostgresClient:
                 .values(status=new_status.value, logs=new_logs, output_esdl=output_esdl, stopped_at=datetime.now())
             )
             session.query(stmnt)
+
+
+def retrieve_job_status_and_logs(self, job_id: uuid4) -> [JobStatus, str]:
+    session: Session
+    LOGGER.debug(f"Retrieving status and log for job {job_id}")
+    with session_scope() as session:
+        stmnt = select(Job).where(Job.job_id.is_(job_id))
+        job: Job = session.scalar(stmnt)
+    return job.input_esdl

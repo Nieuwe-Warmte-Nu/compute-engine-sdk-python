@@ -17,7 +17,7 @@ or install from pypi:
 pip install nwnsdk
 ```
 
-Start local rabbitmq and postgres, in root directory:
+For testing locally with RabbitMQ and Postgres on docker desktop clone https://github.com/Nieuwe-Warmte-Nu/computation-engine, copy `.env-template` to `.env` and in the root directory:
 ```
 docker-compose up
 ```
