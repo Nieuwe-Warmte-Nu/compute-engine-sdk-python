@@ -25,11 +25,24 @@ docker-compose up
 Example usage
 ```python
 from uuid import uuid4
+from nwnsdk import NwnClient, WorkFlowType, PostgresConfig, RabbitmqConfig
 
-from nwnsdk.nwn_client import NwnClient
-
-rabbitmq_client = NwnClient('localhost')
-job_id: uuid4 = rabbitmq_client.start_work_flow('growth_optimizer', 'test_job', 'esdl_string', 'test_user')
+postgres_config = PostgresConfig(
+    "localhost",
+    5432,
+    "nieuwewarmtenu",
+    "root",
+    "1234",
+)
+rabbitmq_config = RabbitmqConfig(
+    "localhost",
+    5672,
+    "nwn",
+    "root",
+    "5678",
+)
+nwn_client = NwnClient(postgres_config, rabbitmq_config)
+job_id: uuid4 = nwn_client.start_work_flow(WorkFlowType.GROWTH_OPTIMIZER, "test_job", "esdl_string", "test_user")
 
 print(job_id)
 ```
