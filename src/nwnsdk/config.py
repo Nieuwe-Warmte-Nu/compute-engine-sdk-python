@@ -1,9 +1,11 @@
 from dataclasses import dataclass
 from enum import Enum
+from typing import Optional
 
 
 class WorkFlowType(Enum):
-    GROWTH_OPTIMIZER = 'growth_optimizer'
+    GROWTH_OPTIMIZER = "growth_optimizer"
+
 
 @dataclass
 class PostgresConfig:
@@ -21,4 +23,4 @@ class RabbitmqConfig:
     exchange_name: str
     user_name: str
     password: str
-    hipe_compile: int | None = 1
+    hipe_compile: Optional[int] = 1
