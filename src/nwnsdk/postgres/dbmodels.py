@@ -24,6 +24,7 @@ class Job(Base):
     job_name = db.Column(db.String, nullable=False)
     work_flow_type = db.Column(db.Enum(WorkFlowType), nullable=False)
     user_name = db.Column(db.String)
+    project_name = db.Column(db.String)
     status = db.Column(db.Enum(JobStatus), nullable=False)
     input_config = db.Column(db.String)
     input_esdl = db.Column(db.String, nullable=False)
@@ -31,4 +32,4 @@ class Job(Base):
     added_at = db.Column(db.DateTime(timezone=True), nullable=False)
     running_at = db.Column(db.DateTime(timezone=True))
     stopped_at = db.Column(db.DateTime(timezone=True))
-    logs = db.Column(db.DateTime(timezone=True))
+    logs = db.Column(db.String)

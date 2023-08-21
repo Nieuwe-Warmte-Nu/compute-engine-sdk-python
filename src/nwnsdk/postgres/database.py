@@ -15,7 +15,7 @@ Session = orm.scoped_session(session_factory)
 
 
 @contextmanager
-def session_scope(bind=None) -> Generator[SQLSession, None, None]:
+def session_scope(bind=None, do_expunge=False) -> Generator[SQLSession, None, None]:
     """Provide a transactional scope around a series of operations. Ensures that the session is
     committed and closed. Exceptions raised within the 'with' block using this contextmanager
     should be handled in the with block itself. They will not be caught by the 'except' here."""
@@ -23,6 +23,9 @@ def session_scope(bind=None) -> Generator[SQLSession, None, None]:
         if bind:
             yield Session(bind=bind)
         yield Session()
+
+        if do_expunge:
+            Session.expunge_all()
         Session.commit()
     except Exception:
         # Only the exceptions raised by session.commit above are caught here

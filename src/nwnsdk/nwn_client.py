@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import List
 from uuid import uuid4
 
 from nwnsdk.postgres.dbmodels import Job
@@ -20,10 +21,17 @@ class NwnClient:
         self.rabbitmq_client = RabbitmqClient(rabbitmq_config)
         self.postgres_client = PostgresClient(postgres_config)
 
-    def start_work_flow(self, work_flow_type: WorkFlowType, job_name: str, esdl_str: str, user_name: str) -> uuid4:
+    def start_work_flow(
+        self, work_flow_type: WorkFlowType, job_name: str, esdl_str: str, user_name: str, project_name: str
+    ) -> uuid4:
         job_id: uuid4 = uuid4()
         self.postgres_client.send_input(
-            job_id=job_id, job_name=job_name, work_flow_type=work_flow_type, esdl_str=esdl_str, user_name=user_name
+            job_id=job_id,
+            job_name=job_name,
+            work_flow_type=work_flow_type,
+            esdl_str=esdl_str,
+            user_name=user_name,
+            project_name=project_name,
         )
         self.rabbitmq_client.send_start_work_flow(job_id, work_flow_type)
 
@@ -35,8 +43,17 @@ class NwnClient:
     def get_job_details(self, job_id: uuid4) -> Job:
         return self.postgres_client.get_job(job_id)
 
-    def get_jobs(self, job_ids: list[uuid4]) -> list[Job]:
+    def get_all_jobs(self) -> List[Job]:
+        return self.postgres_client.get_jobs()
+
+    def get_jobs_from_ids(self, job_ids: list[uuid4]) -> List[Job]:
         return self.postgres_client.get_jobs(job_ids)
+
+    def get_jobs_from_user(self, user_name: str) -> List[Job]:
+        return self.postgres_client.get_jobs_from_user(user_name)
+
+    def get_jobs_from_project(self, project_name: str) -> List[Job]:
+        return self.postgres_client.get_jobs_from_project(project_name)
 
     @property
     def db_client(self) -> PostgresClient:
