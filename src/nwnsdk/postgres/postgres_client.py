@@ -64,7 +64,7 @@ class PostgresClient:
         LOGGER.debug("Started job with id '%s'", job_id)
         with session_scope() as session:
             stmnt = update(Job).where(Job.job_id == job_id).values(status=JobStatus.RUNNING, running_at=datetime.now())
-            session.query(stmnt)
+            session.execute(stmnt)
 
     def store_job_result(self, job_id: uuid4, new_logs: str, new_status: JobStatus, output_esdl: str):
         LOGGER.debug(
