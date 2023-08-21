@@ -56,7 +56,7 @@ class PostgresClient:
     def retrieve_input_esdl(self, job_id: uuid4) -> str:
         LOGGER.debug("Retrieving esdl for job %s", job_id)
         with session_scope() as session:
-            stmnt = select(Job).where(Job.job_id.is_(job_id))
+            stmnt = select(Job).where(Job.job_id == job_id)
             job: Job = session.scalar(stmnt)
         return job.input_esdl
 
