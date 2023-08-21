@@ -4,6 +4,7 @@ from typing import List
 from uuid import uuid4
 
 from sqlalchemy import select, update
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.strategy_options import load_only
 
 from nwnsdk import PostgresConfig, WorkFlowType
@@ -56,9 +57,9 @@ class PostgresClient:
     def retrieve_input_esdl(self, job_id: uuid4) -> str:
         LOGGER.debug("Retrieving esdl for job %s", job_id)
         with session_scope(do_expunge=True) as session:
-            stmnt = select(Job).where(Job.job_id == job_id)
-            job: Job = session.scalar(stmnt)
-        return job.input_esdl
+            stmnt = select(Job.input_esdl).where(Job.job_id == (job_id))
+            input_esdl: str = session.scalar(stmnt)
+        return input_esdl
 
     def set_job_running(self, job_id: uuid4) -> None:
         LOGGER.debug("Started job with id '%s'", job_id)
@@ -90,6 +91,7 @@ class PostgresClient:
 
     def get_job(self, job_id: uuid4) -> Job:
         LOGGER.debug("Retrieving job data for job with id '%s'", job_id)
+        session: Session
         with session_scope(do_expunge=True) as session:
             stmnt = select(Job).where(Job.job_id == job_id)
             job: Job = session.scalar(stmnt)

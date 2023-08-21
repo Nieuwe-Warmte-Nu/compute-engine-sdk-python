@@ -19,6 +19,7 @@ def session_scope(bind=None, do_expunge=False) -> Generator[SQLSession, None, No
     """Provide a transactional scope around a series of operations. Ensures that the session is
     committed and closed. Exceptions raised within the 'with' block using this contextmanager
     should be handled in the with block itself. They will not be caught by the 'except' here."""
+    session = None
     try:
         if bind:
             yield Session(bind=bind)
@@ -27,12 +28,14 @@ def session_scope(bind=None, do_expunge=False) -> Generator[SQLSession, None, No
         if do_expunge:
             Session.expunge_all()
         Session.commit()
-    except Exception:
+    except Exception as e:
         # Only the exceptions raised by session.commit above are caught here
-        Session.rollback()
-        raise
+        if session is not None:
+            Session.rollback()
+        raise e
     finally:
-        Session.remove()
+        if session is not None:
+            Session.remove()
 
 
 def initialize_db(application_name: str, config: PostgresConfig):

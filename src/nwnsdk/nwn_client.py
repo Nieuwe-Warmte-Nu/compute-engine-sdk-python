@@ -46,7 +46,7 @@ class NwnClient:
     def get_all_jobs(self) -> List[Job]:
         return self.postgres_client.get_jobs()
 
-    def get_jobs_from_ids(self, job_ids: list[uuid4]) -> List[Job]:
+    def get_jobs_from_ids(self, job_ids: List[uuid4]) -> List[Job]:
         return self.postgres_client.get_jobs(job_ids)
 
     def get_jobs_from_user(self, user_name: str) -> List[Job]:

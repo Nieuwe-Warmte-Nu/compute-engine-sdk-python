@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from enum import Enum
 
 import sqlalchemy as db
@@ -17,6 +18,7 @@ class JobStatus(Enum):
     STOPPED = "stopped"
 
 
+@dataclass
 class Job(Base):
     __tablename__ = "job"
 
