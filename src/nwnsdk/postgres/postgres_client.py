@@ -97,7 +97,7 @@ class PostgresClient:
             job: Job = session.scalar(stmnt)
         return job
 
-    def get_jobs(self, job_ids: list[uuid4] = None) -> List[Job]:
+    def get_jobs(self, job_ids: List[uuid4] = None) -> List[Job]:
         with session_scope(do_expunge=True) as session:
             stmnt = ALL_JOBS_STMNT
             if job_ids:
