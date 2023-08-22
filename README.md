@@ -4,7 +4,13 @@ Nieuwe Warmte Nu
 
 ## install/update pip package
 see
-https://packaging.python.org/en/latest/tutorials/packaging-projects/#:~:text=Generating%20distribution%20archives
+https://packaging.python.org/en/latest/tutorials/packaging-projects/#:~:text=Generating%20distribution%20archives  
+Update version in `pyproject.toml`.  
+In root directory:
+```
+py -m build
+twine upload dist/*
+```
 
 ## usage
 Install in development mode, in root directory:

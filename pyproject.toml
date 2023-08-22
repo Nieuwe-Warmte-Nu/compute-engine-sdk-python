@@ -1,6 +1,6 @@
 [project]
 name = "nwnsdk"
-version = "0.0.3"
+version = "0.0.4"
 authors = [{ name = "NieuweWarmteNu", email = "info@nwn.nu" }]
 description = "Nieuwe Warmte Nu - compute engine sdk python"
 classifiers = [
