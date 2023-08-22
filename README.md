@@ -51,6 +51,9 @@ job_id2: uuid4 = nwn_client.start_work_flow(
 )
 print(job_id1)
 
+job1_input_esdl = nwn_client.get_job_input_esdl(job_id1)
+print(f"===== job1 input ESDL: {job1_input_esdl}")
+
 job1_status = nwn_client.get_job_status(job_id1)
 print(f"===== job1 status: {job1_status}")
 
@@ -71,5 +74,7 @@ print(f"===== Jobs from test_user1 added at: {','.join([str(job.added_at) for jo
 
 jobs_from_project = nwn_client.get_jobs_from_project("test_proj")
 print(f"===== Jobs from test_proj added at: {','.join([str(job.added_at) for job in jobs_from_project])}")
+
+print(f"===== Deleted job with id '{job_id1}': {nwn_client.delete_job(job_id1)}")
 
 ```
