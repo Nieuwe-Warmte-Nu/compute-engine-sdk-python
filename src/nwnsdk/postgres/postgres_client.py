@@ -3,7 +3,7 @@ import logging
 from typing import List
 from uuid import uuid4
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, delete
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.strategy_options import load_only
 
@@ -33,13 +33,13 @@ class PostgresClient:
         initialize_db("nwn", postgres_config)
 
     def send_input(
-        self,
-        job_id: uuid4,
-        job_name: str,
-        work_flow_type: WorkFlowType,
-        esdl_str: str,
-        user_name: str,
-        project_name: str,
+            self,
+            job_id: uuid4,
+            job_name: str,
+            work_flow_type: WorkFlowType,
+            esdl_str: str,
+            user_name: str,
+            project_name: str,
     ) -> None:
         with session_scope() as session:
             new_job = Job(
@@ -53,13 +53,6 @@ class PostgresClient:
                 added_at=datetime.now(),
             )
             session.add(new_job)
-
-    def retrieve_input_esdl(self, job_id: uuid4) -> str:
-        LOGGER.debug("Retrieving esdl for job %s", job_id)
-        with session_scope(do_expunge=True) as session:
-            stmnt = select(Job.input_esdl).where(Job.job_id == (job_id))
-            input_esdl: str = session.scalar(stmnt)
-        return input_esdl
 
     def set_job_running(self, job_id: uuid4) -> None:
         LOGGER.debug("Started job with id '%s'", job_id)
@@ -85,16 +78,37 @@ class PostgresClient:
     def get_job_status(self, job_id: uuid4) -> JobStatus:
         LOGGER.debug("Retrieving job status for job with id '%s'", job_id)
         with session_scope(do_expunge=True) as session:
-            stmnt = select(Job).options(load_only(Job.status)).where(Job.job_id == job_id)
-            job: Job = session.scalar(stmnt)
-        return job.status
+            stmnt = select(Job.status).where(Job.job_id == job_id)
+            job_status = session.scalar(stmnt)
+        return job_status
+
+    def get_job_input_esdl(self, job_id: uuid4) -> str:
+        LOGGER.debug("Retrieving input esdl for job %s", job_id)
+        with session_scope(do_expunge=True) as session:
+            stmnt = select(Job.input_esdl).where(Job.job_id == (job_id))
+            job_input_esdl: str = session.scalar(stmnt)
+        return job_input_esdl
+
+    def get_job_output_esdl(self, job_id: uuid4) -> str:
+        LOGGER.debug("Retrieving job output esdl for job with id '%s'", job_id)
+        with session_scope() as session:
+            stmnt = select(Job.output_esdl).where(Job.job_id == job_id)
+            job_output_esdl: Job = session.scalar(stmnt)
+        return job_output_esdl
+
+    def get_job_logs(self, job_id: uuid4) -> str:
+        LOGGER.debug("Retrieving job log for job with id '%s'", job_id)
+        with session_scope() as session:
+            stmnt = select(Job.logs).where(Job.job_id == job_id)
+            job_logs: Job = session.scalar(stmnt)
+        return job_logs
 
     def get_job(self, job_id: uuid4) -> Job:
         LOGGER.debug("Retrieving job data for job with id '%s'", job_id)
         session: Session
         with session_scope(do_expunge=True) as session:
             stmnt = select(Job).where(Job.job_id == job_id)
-            job: Job = session.scalar(stmnt)
+            job = session.scalar(stmnt)
         return job
 
     def get_jobs(self, job_ids: List[uuid4] = None) -> List[Job]:
@@ -122,3 +136,17 @@ class PostgresClient:
             stmnt = ALL_JOBS_STMNT.where(Job.project_name == project_name)
             jobs = session.scalars(stmnt).all()
         return jobs
+
+    def delete_job(self, job_id: uuid4) -> bool:
+        LOGGER.debug("Deleting job with id '%s'", job_id)
+        session: Session
+        with session_scope() as session:
+            stmnt = select(Job).where(Job.job_id == job_id)
+            job = session.scalars(stmnt).all()
+            if job:
+                stmnt = delete(Job).where(Job.job_id == job_id)
+                session.execute(stmnt)
+                job_deleted = True
+            else:
+                job_deleted = False
+        return job_deleted

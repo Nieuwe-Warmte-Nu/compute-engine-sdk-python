@@ -22,7 +22,7 @@ class NwnClient:
         self.postgres_client = PostgresClient(postgres_config)
 
     def start_work_flow(
-        self, work_flow_type: WorkFlowType, job_name: str, esdl_str: str, user_name: str, project_name: str
+            self, work_flow_type: WorkFlowType, job_name: str, esdl_str: str, user_name: str, project_name: str
     ) -> uuid4:
         job_id: uuid4 = uuid4()
         self.postgres_client.send_input(
@@ -40,6 +40,15 @@ class NwnClient:
     def get_job_status(self, job_id: uuid4) -> JobStatus:
         return self.postgres_client.get_job_status(job_id)
 
+    def get_job_input_esdl(self, job_id: uuid4) -> str:
+        return self.postgres_client.get_job_input_esdl(job_id)
+
+    def get_job_output_esdl(self, job_id: uuid4) -> str:
+        return self.postgres_client.get_job_output_esdl(job_id)
+
+    def get_job_logs(self, job_id: uuid4) -> str:
+        return self.postgres_client.get_job_logs(job_id)
+
     def get_job_details(self, job_id: uuid4) -> Job:
         return self.postgres_client.get_job(job_id)
 
@@ -54,6 +63,9 @@ class NwnClient:
 
     def get_jobs_from_project(self, project_name: str) -> List[Job]:
         return self.postgres_client.get_jobs_from_project(project_name)
+
+    def delete_job(self, job_id: uuid4) -> bool:
+        return self.postgres_client.delete_job(job_id)
 
     @property
     def db_client(self) -> PostgresClient:
