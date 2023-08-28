@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Callable, Dict
 from uuid import uuid4
 
 from nwnsdk.postgres.dbmodels import Job
-from nwnsdk.rabbitmq.rabbitmq_client import RabbitmqClient
+from nwnsdk.rabbitmq.rabbitmq_client import RabbitmqClient, Queue, PikaCallback
 
 import logging
 from nwnsdk.postgres.postgres_client import PostgresClient
@@ -21,8 +21,16 @@ class NwnClient:
         self.rabbitmq_client = RabbitmqClient(rabbitmq_config)
         self.postgres_client = PostgresClient(postgres_config)
 
+    def connect(self):
+        self.postgres_client.connect()
+        self.broker_client.connect()
+
+    def stop(self):
+        self.postgres_client.close()
+        self.rabbitmq_client.stop()
+
     def start_work_flow(
-            self, work_flow_type: WorkFlowType, job_name: str, esdl_str: str, user_name: str, project_name: str
+        self, work_flow_type: WorkFlowType, job_name: str, esdl_str: str, user_name: str, project_name: str
     ) -> uuid4:
         job_id: uuid4 = uuid4()
         self.postgres_client.send_input(
@@ -74,3 +82,6 @@ class NwnClient:
     @property
     def broker_client(self) -> RabbitmqClient:
         return self.rabbitmq_client
+
+    def wait_for_work(self, callbacks: Dict[Queue, PikaCallback]):
+        self.broker_client.wait_for_data(callbacks)

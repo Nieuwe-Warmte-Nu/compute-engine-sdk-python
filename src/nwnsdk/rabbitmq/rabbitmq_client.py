@@ -33,23 +33,35 @@ class Queue(Enum):
 
 
 class RabbitmqClient:
+    config: RabbitmqConfig
     rabbitmq_exchange: str
+    connection: pika.BlockingConnection
     channel: BlockingChannel
     queue: str
 
     def __init__(self, config: RabbitmqConfig):
+        self.config = config
         self.rabbitmq_exchange = config.exchange_name
 
+    def connect(self):
         # initialize rabbitmq connection
-        LOGGER.info("Connecting to RabbitMQ at %s:%s as user %s", config.host, config.port, config.user_name)
-        credentials = pika.PlainCredentials(config.user_name, config.password)
+        LOGGER.info(
+            "Connecting to RabbitMQ at %s:%s as user %s", self.config.host, self.config.port, self.config.user_name
+        )
+        credentials = pika.PlainCredentials(self.config.user_name, self.config.password)
         parameters = pika.ConnectionParameters(
-            config.host, config.port, "/", credentials, heartbeat=3600, blocked_connection_timeout=3600
+            self.config.host,
+            self.config.port,
+            "/",
+            credentials,
+            heartbeat=3600,
+            blocked_connection_timeout=3600,
+            connection_attempts=10,
         )
 
-        connection = pika.BlockingConnection(parameters)
+        self.connection = pika.BlockingConnection(parameters)
 
-        self.channel = connection.channel()
+        self.channel = self.connection.channel()
         self.channel.basic_qos(prefetch_size=0, prefetch_count=1)
         self.channel.exchange_declare(exchange=self.rabbitmq_exchange, exchange_type="topic")
         self.queue = self.channel.queue_declare(Queue.StartWorkflowOptimizer.value, exclusive=False).method.queue
@@ -59,13 +71,6 @@ class RabbitmqClient:
     def wait_for_data(self, callbacks: Dict[Queue, PikaCallback]):
         for queue, callback in callbacks.items():
             self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
-
-        def stop(signal, frame):
-            LOGGER.info("Received signal %s. Stopping..", signal)
-            self.channel.stop_consuming()
-
-        signal.signal(signal.SIGINT, stop)
-        signal.signal(signal.SIGTERM, stop)
 
         LOGGER.info("Waiting for input...")
         self.channel.start_consuming()
@@ -79,3 +84,9 @@ class RabbitmqClient:
     def send_output(self, queue: Queue, message: str):
         body: bytes = message.encode("utf-8")
         self.channel.basic_publish(exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body)
+
+    def stop(self):
+        if self.channel:
+            self.channel.stop_consuming()
+        if self.connection:
+            self.connection.close()
