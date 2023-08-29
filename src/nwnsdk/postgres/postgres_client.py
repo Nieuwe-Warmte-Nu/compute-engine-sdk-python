@@ -6,6 +6,7 @@ from uuid import uuid4
 from sqlalchemy import select, update, delete
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.strategy_options import load_only
+from sqlalchemy.engine import Engine
 
 from nwnsdk import PostgresConfig, WorkFlowType
 from nwnsdk.postgres.database import initialize_db, session_scope
@@ -29,17 +30,27 @@ ALL_JOBS_STMNT = select(Job).options(
 
 
 class PostgresClient:
-    def __init__(self, postgres_config: PostgresConfig):
-        initialize_db("nwn", postgres_config)
+    db_config: PostgresConfig
+    engine: Engine
 
-    def send_input(
-            self,
-            job_id: uuid4,
-            job_name: str,
-            work_flow_type: WorkFlowType,
-            esdl_str: str,
-            user_name: str,
-            project_name: str,
+    def __init__(self, postgres_config: PostgresConfig):
+        self.db_config = postgres_config
+
+    def _connect_postgres(self):
+        self.engine = initialize_db("nwn", self.db_config)
+
+    def _close_postgres(self):
+        if self.engine:
+            self.engine.dispose()
+
+    def _send_input(
+        self,
+        job_id: uuid4,
+        job_name: str,
+        work_flow_type: WorkFlowType,
+        esdl_str: str,
+        user_name: str,
+        project_name: str,
     ) -> None:
         with session_scope() as session:
             new_job = Job(

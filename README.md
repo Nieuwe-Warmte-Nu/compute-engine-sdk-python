@@ -49,38 +49,42 @@ rabbitmq_config = RabbitmqConfig(
     "5678",
 )
 nwn_client = NwnClient(postgres_config, rabbitmq_config)
-job_id1: uuid4 = nwn_client.start_work_flow(
-    WorkFlowType.GROWTH_OPTIMIZER, "test_job1", "esdl_string", "test_user1", "test_proj"
-)
-job_id2: uuid4 = nwn_client.start_work_flow(
-    WorkFlowType.GROWTH_OPTIMIZER, "test_job2", "esdl_string", "test_user2", "test_proj"
-)
-print(job_id1)
-
-job1_input_esdl = nwn_client.get_job_input_esdl(job_id1)
-print(f"===== job1 input ESDL: {job1_input_esdl}")
-
-job1_status = nwn_client.get_job_status(job_id1)
-print(f"===== job1 status: {job1_status}")
-
-job1 = nwn_client.get_job_details(job_id1)
-print(f"===== {job1.job_name} input esdl: {job1.input_esdl}")
-
-jobs_all = nwn_client.get_all_jobs()
-print(f"===== {jobs_all[1].job_name} added at: {jobs_all[1].added_at}")
-
-
-jobs_from_ids = nwn_client.get_jobs_from_ids([job_id1, job_id2])
-print(f"===== {jobs_from_ids[1].job_name} added at: {jobs_from_ids[1].added_at}")
-
-
-jobs_from_user = nwn_client.get_jobs_from_user("test_user1")
-print(f"===== Jobs from test_user1 added at: {','.join([str(job.added_at) for job in jobs_from_user])}")
-
-
-jobs_from_project = nwn_client.get_jobs_from_project("test_proj")
-print(f"===== Jobs from test_proj added at: {','.join([str(job.added_at) for job in jobs_from_project])}")
-
-print(f"===== Deleted job with id '{job_id1}': {nwn_client.delete_job(job_id1)}")
+try:
+    nwn_client.connect()
+    job_id1: uuid4 = nwn_client.start_work_flow(
+        WorkFlowType.GROWTH_OPTIMIZER, "test_job1", "esdl_string", "test_user1", "test_proj"
+    )
+    job_id2: uuid4 = nwn_client.start_work_flow(
+        WorkFlowType.GROWTH_OPTIMIZER, "test_job2", "esdl_string", "test_user2", "test_proj"
+    )
+    print(job_id1)
+    
+    job1_input_esdl = nwn_client.get_job_input_esdl(job_id1)
+    print(f"===== job1 input ESDL: {job1_input_esdl}")
+    
+    job1_status = nwn_client.get_job_status(job_id1)
+    print(f"===== job1 status: {job1_status}")
+    
+    job1 = nwn_client.get_job_details(job_id1)
+    print(f"===== {job1.job_name} input esdl: {job1.input_esdl}")
+    
+    jobs_all = nwn_client.get_all_jobs()
+    print(f"===== {jobs_all[1].job_name} added at: {jobs_all[1].added_at}")
+    
+    
+    jobs_from_ids = nwn_client.get_jobs_from_ids([job_id1, job_id2])
+    print(f"===== {jobs_from_ids[1].job_name} added at: {jobs_from_ids[1].added_at}")
+    
+    
+    jobs_from_user = nwn_client.get_jobs_from_user("test_user1")
+    print(f"===== Jobs from test_user1 added at: {','.join([str(job.added_at) for job in jobs_from_user])}")
+    
+    
+    jobs_from_project = nwn_client.get_jobs_from_project("test_proj")
+    print(f"===== Jobs from test_proj added at: {','.join([str(job.added_at) for job in jobs_from_project])}")
+    
+    print(f"===== Deleted job with id '{job_id1}': {nwn_client.delete_job(job_id1)}")
+finally:
+    nwn_client.stop()
 
 ```
