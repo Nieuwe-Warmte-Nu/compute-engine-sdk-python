@@ -30,19 +30,20 @@ ALL_JOBS_STMNT = select(Job).options(
 
 
 class PostgresClient:
-    config: PostgresConfig
+    db_config: PostgresConfig
     engine: Engine
 
     def __init__(self, postgres_config: PostgresConfig):
-        self.config = postgres_config
+        self.db_config = postgres_config
 
-    def connect(self):
-        self.engine = initialize_db("nwn", self.config)
+    def _connect(self):
+        self.engine = initialize_db("nwn", self.db_config)
 
-    def close(self):
-        self.engine.dispose()
+    def _close(self):
+        if self.engine:
+            self.engine.dispose()
 
-    def send_input(
+    def _send_input(
         self,
         job_id: uuid4,
         job_name: str,

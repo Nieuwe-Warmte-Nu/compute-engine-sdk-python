@@ -40,18 +40,21 @@ class RabbitmqClient:
     queue: str
 
     def __init__(self, config: RabbitmqConfig):
-        self.config = config
+        self.rabbitmq_config = config
         self.rabbitmq_exchange = config.exchange_name
 
-    def connect(self):
+    def _connect(self):
         # initialize rabbitmq connection
         LOGGER.info(
-            "Connecting to RabbitMQ at %s:%s as user %s", self.config.host, self.config.port, self.config.user_name
+            "Connecting to RabbitMQ at %s:%s as user %s",
+            self.rabbitmq_config.host,
+            self.rabbitmq_config.port,
+            self.rabbitmq_config.user_name,
         )
-        credentials = pika.PlainCredentials(self.config.user_name, self.config.password)
+        credentials = pika.PlainCredentials(self.rabbitmq_config.user_name, self.rabbitmq_config.password)
         parameters = pika.ConnectionParameters(
-            self.config.host,
-            self.config.port,
+            self.rabbitmq_config.host,
+            self.rabbitmq_config.port,
             "/",
             credentials,
             heartbeat=3600,
@@ -68,24 +71,24 @@ class RabbitmqClient:
         self.channel.queue_bind(self.queue, self.rabbitmq_exchange, routing_key=Queue.StartWorkflowOptimizer.value)
         LOGGER.info("Connected to RabbitMQ")
 
-    def wait_for_data(self, callbacks: Dict[Queue, PikaCallback]):
+    def wait_for_work(self, callbacks: Dict[Queue, PikaCallback]):
         for queue, callback in callbacks.items():
             self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
 
         LOGGER.info("Waiting for input...")
         self.channel.start_consuming()
 
-    def send_start_work_flow(self, job_id: uuid4, work_flow_type: WorkFlowType):
+    def _send_start_work_flow(self, job_id: uuid4, work_flow_type: WorkFlowType):
         # TODO convert to protobuf
         # TODO job_id converted to string for json
         body = json.dumps({"job_id": str(job_id)})
-        self.send_output(Queue.from_workflow_type(work_flow_type), body)
+        self._send_output(Queue.from_workflow_type(work_flow_type), body)
 
-    def send_output(self, queue: Queue, message: str):
+    def _send_output(self, queue: Queue, message: str):
         body: bytes = message.encode("utf-8")
         self.channel.basic_publish(exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body)
 
-    def stop(self):
+    def _stop(self):
         if self.channel:
             self.channel.stop_consuming()
         if self.connection:
