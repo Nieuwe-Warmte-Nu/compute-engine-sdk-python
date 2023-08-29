@@ -22,12 +22,12 @@ class NwnClient(PostgresClient, RabbitmqClient):
         RabbitmqClient.__init__(self, rabbitmq_config)
 
     def connect(self):
-        PostgresClient._connect(self)
-        RabbitmqClient._connect(self)
+        PostgresClient._connect_postgres(self)
+        RabbitmqClient._connect_rabbitmq(self)
 
     def stop(self):
-        PostgresClient._close(self)
-        RabbitmqClient._stop(self)
+        PostgresClient._close_postgres(self)
+        RabbitmqClient._stop_rabbitmq(self)
 
     def start_work_flow(
         self, work_flow_type: WorkFlowType, job_name: str, esdl_str: str, user_name: str, project_name: str

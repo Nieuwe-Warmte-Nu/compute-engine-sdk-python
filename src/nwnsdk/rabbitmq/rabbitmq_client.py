@@ -2,11 +2,11 @@
 
 import logging
 from enum import Enum
-import signal
 from typing import Callable, Dict
 from uuid import uuid4
 
 import pika
+import pika.exceptions
 import json
 
 from pika.adapters.blocking_connection import BlockingChannel
@@ -33,17 +33,19 @@ class Queue(Enum):
 
 
 class RabbitmqClient:
-    config: RabbitmqConfig
+    rabbitmq_is_running: bool
+    rabbitmq_config: RabbitmqConfig
     rabbitmq_exchange: str
     connection: pika.BlockingConnection
     channel: BlockingChannel
     queue: str
 
     def __init__(self, config: RabbitmqConfig):
+        self.rabbitmq_is_running = False
         self.rabbitmq_config = config
         self.rabbitmq_exchange = config.exchange_name
 
-    def _connect(self):
+    def _connect_rabbitmq(self):
         # initialize rabbitmq connection
         LOGGER.info(
             "Connecting to RabbitMQ at %s:%s as user %s",
@@ -72,11 +74,19 @@ class RabbitmqClient:
         LOGGER.info("Connected to RabbitMQ")
 
     def wait_for_work(self, callbacks: Dict[Queue, PikaCallback]):
-        for queue, callback in callbacks.items():
-            self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
+        self.rabbitmq_is_running = True
 
-        LOGGER.info("Waiting for input...")
-        self.channel.start_consuming()
+        while self.rabbitmq_is_running:
+            try:
+                for queue, callback in callbacks.items():
+                    self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
+                LOGGER.info("Waiting for input...")
+                self.channel.start_consuming()
+            except pika.exceptions.ConnectionClosedByBroker as exc:
+                LOGGER.info('Connection was closed by broker. Reason: "%s". Shutting down...', exc.reply_text)
+            except pika.exceptions.AMQPConnectionError:
+                LOGGER.info("Connection was lost, retrying...")
+                self._connect_rabbitmq()
 
     def _send_start_work_flow(self, job_id: uuid4, work_flow_type: WorkFlowType):
         # TODO convert to protobuf
@@ -88,7 +98,8 @@ class RabbitmqClient:
         body: bytes = message.encode("utf-8")
         self.channel.basic_publish(exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body)
 
-    def _stop(self):
+    def _stop_rabbitmq(self):
+        self.rabbitmq_is_running = False
         if self.channel:
             self.channel.stop_consuming()
         if self.connection:

@@ -36,10 +36,10 @@ class PostgresClient:
     def __init__(self, postgres_config: PostgresConfig):
         self.db_config = postgres_config
 
-    def _connect(self):
+    def _connect_postgres(self):
         self.engine = initialize_db("nwn", self.db_config)
 
-    def _close(self):
+    def _close_postgres(self):
         if self.engine:
             self.engine.dispose()
 
