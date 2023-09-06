@@ -1,6 +1,6 @@
 [project]
 name = "nwnsdk"
-version = "0.0.5"
+dynamic = ["version"]
 authors = [{ name = "NieuweWarmteNu", email = "info@nwn.nu" }]
 description = "Nieuwe Warmte Nu - compute engine sdk python"
 classifiers = [
@@ -31,3 +31,10 @@ dependencies = [
 [project.urls]
 "Homepage" = "https://github.com/pypa/sampleproject"
 "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"
+
+[build-system]
+requires = ["setuptools", "setuptools-git-versioning<2"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools-git-versioning]
+enabled = true
