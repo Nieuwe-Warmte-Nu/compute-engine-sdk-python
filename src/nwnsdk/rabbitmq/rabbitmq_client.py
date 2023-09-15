@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import logging
+import threading
 from enum import Enum
 from typing import Callable, Dict
 from uuid import uuid4
@@ -32,7 +33,7 @@ class Queue(Enum):
             raise RuntimeError(f"Unimplemented workflow type {workflow_type}. Please implement.")
 
 
-class RabbitmqClient:
+class RabbitmqClient(threading.Thread):
     rabbitmq_is_running: bool
     rabbitmq_config: RabbitmqConfig
     rabbitmq_exchange: str
@@ -41,6 +42,7 @@ class RabbitmqClient:
     queue: str
 
     def __init__(self, config: RabbitmqConfig):
+        super().__init__()
         self.rabbitmq_is_running = False
         self.rabbitmq_config = config
         self.rabbitmq_exchange = config.exchange_name
@@ -59,7 +61,7 @@ class RabbitmqClient:
             self.rabbitmq_config.port,
             "/",
             credentials,
-            heartbeat=3600,
+            heartbeat=60,
             blocked_connection_timeout=3600,
             connection_attempts=10,
         )
@@ -73,15 +75,24 @@ class RabbitmqClient:
         self.channel.queue_bind(self.queue, self.rabbitmq_exchange, routing_key=Queue.StartWorkflowOptimizer.value)
         LOGGER.info("Connected to RabbitMQ")
 
-    def wait_for_work(self, callbacks: Dict[Queue, PikaCallback]):
+    def _start_rabbitmq(self):
+        self._connect_rabbitmq()
+        self.start()
+
+    def set_callbacks(self, callbacks: Dict[Queue, PikaCallback]):
+        for queue, callback in callbacks.items():
+            self.connection.add_callback_threadsafe(lambda: self.channel.basic_consume(queue=queue.value,
+                                                                                       on_message_callback=callback,
+                                                                                       auto_ack=False))
+
+    def run(self):
         self.rabbitmq_is_running = True
 
         while self.rabbitmq_is_running:
             try:
-                for queue, callback in callbacks.items():
-                    self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
                 LOGGER.info("Waiting for input...")
-                self.channel.start_consuming()
+                while self.rabbitmq_is_running:
+                    self.connection.process_data_events(time_limit=1)
             except pika.exceptions.ConnectionClosedByBroker as exc:
                 LOGGER.info('Connection was closed by broker. Reason: "%s". Shutting down...', exc.reply_text)
             except pika.exceptions.AMQPConnectionError:
@@ -96,11 +107,11 @@ class RabbitmqClient:
 
     def _send_output(self, queue: Queue, message: str):
         body: bytes = message.encode("utf-8")
-        self.channel.basic_publish(exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body)
+        self.connection.add_callback_threadsafe(lambda: self.channel.basic_publish(exchange=self.rabbitmq_exchange,
+                                                                                   routing_key=queue.value,
+                                                                                   body=body))
 
     def _stop_rabbitmq(self):
         self.rabbitmq_is_running = False
-        if self.channel:
-            self.channel.stop_consuming()
         if self.connection:
-            self.connection.close()
+            self.connection.add_callback_threadsafe(lambda: self.connection.close())
