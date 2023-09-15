@@ -28,6 +28,15 @@ dependencies = [
     "psycopg2-binary==2.9.7",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "setuptools-git-versioning<2",
+    "pip-tools",
+    "build",
+    "setuptools"
+]
+
+
 [project.urls]
 "Homepage" = "https://github.com/pypa/sampleproject"
 "Bug Tracker" = "https://github.com/pypa/sampleproject/issues"

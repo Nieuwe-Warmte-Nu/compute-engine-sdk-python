@@ -23,7 +23,7 @@ class NwnClient(PostgresClient, RabbitmqClient):
 
     def connect(self):
         PostgresClient._connect_postgres(self)
-        RabbitmqClient._connect_rabbitmq(self)
+        RabbitmqClient._start_rabbitmq(self)
 
     def stop(self):
         PostgresClient._close_postgres(self)
