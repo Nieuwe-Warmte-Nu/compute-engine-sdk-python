@@ -24,11 +24,14 @@ PikaCallback = Callable[
 
 class Queue(Enum):
     StartWorkflowOptimizer = "start_work_flow.optimizer"
+    StartWorkflowGrowSimulator = "start_work_flow.grow_simulator"
 
     @staticmethod
     def from_workflow_type(workflow_type: WorkFlowType) -> "Queue":
-        if workflow_type == WorkFlowType.GROWTH_OPTIMIZER:
+        if workflow_type == WorkFlowType.GROW_OPTIMIZER:
             return Queue.StartWorkflowOptimizer
+        elif workflow_type == WorkFlowType.GROW_SIMULATOR:
+            return Queue.StartWorkflowGrowSimulator
         else:
             raise RuntimeError(f"Unimplemented workflow type {workflow_type}. Please implement.")
 
@@ -71,8 +74,9 @@ class RabbitmqClient(threading.Thread):
         self.channel = self.connection.channel()
         self.channel.basic_qos(prefetch_size=0, prefetch_count=1)
         self.channel.exchange_declare(exchange=self.rabbitmq_exchange, exchange_type="topic")
-        self.queue = self.channel.queue_declare(Queue.StartWorkflowOptimizer.value, exclusive=False).method.queue
-        self.channel.queue_bind(self.queue, self.rabbitmq_exchange, routing_key=Queue.StartWorkflowOptimizer.value)
+        for queue_item in Queue:
+            queue = self.channel.queue_declare(queue_item.value, exclusive=False).method.queue
+            self.channel.queue_bind(queue, self.rabbitmq_exchange, routing_key=queue_item.value)
         LOGGER.info("Connected to RabbitMQ")
 
     def _start_rabbitmq(self):
@@ -81,9 +85,9 @@ class RabbitmqClient(threading.Thread):
 
     def set_callbacks(self, callbacks: Dict[Queue, PikaCallback]):
         for queue, callback in callbacks.items():
-            self.connection.add_callback_threadsafe(lambda: self.channel.basic_consume(queue=queue.value,
-                                                                                       on_message_callback=callback,
-                                                                                       auto_ack=False))
+            self.connection.add_callback_threadsafe(
+                lambda: self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
+            )
 
     def run(self):
         self.rabbitmq_is_running = True
@@ -107,9 +111,9 @@ class RabbitmqClient(threading.Thread):
 
     def _send_output(self, queue: Queue, message: str):
         body: bytes = message.encode("utf-8")
-        self.connection.add_callback_threadsafe(lambda: self.channel.basic_publish(exchange=self.rabbitmq_exchange,
-                                                                                   routing_key=queue.value,
-                                                                                   body=body))
+        self.connection.add_callback_threadsafe(
+            lambda: self.channel.basic_publish(exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body)
+        )
 
     def _stop_rabbitmq(self):
         self.rabbitmq_is_running = False
