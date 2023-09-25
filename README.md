@@ -42,10 +42,10 @@ nwn_client = NwnClient(postgres_config, rabbitmq_config)
 try:
     nwn_client.connect()
     job_id1: uuid4 = nwn_client.start_work_flow(
-        WorkFlowType.GROWTH_OPTIMIZER, "test_job1", "esdl_string", "test_user1", "test_proj"
+        WorkFlowType.GROW_OPTIMIZER, "test_job1", "esdl_string", "test_user1", "test_proj"
     )
     job_id2: uuid4 = nwn_client.start_work_flow(
-        WorkFlowType.GROWTH_OPTIMIZER, "test_job2", "esdl_string", "test_user2", "test_proj"
+        WorkFlowType.GROW_OPTIMIZER, "test_job2", "esdl_string", "test_user2", "test_proj"
     )
     print(job_id1)
     
