@@ -5,7 +5,7 @@ from typing import Optional
 
 class WorkFlowType(Enum):
     GROW_OPTIMIZER = "grow_optimizer"
-    GROW_SIMULATOR = "grow"
+    GROW_SIMULATOR = "grow_simulator"
 
 
 @dataclass
