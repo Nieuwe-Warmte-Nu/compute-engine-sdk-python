@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-
+import functools
 import logging
 import threading
 from enum import Enum
@@ -86,7 +86,9 @@ class RabbitmqClient(threading.Thread):
     def set_callbacks(self, callbacks: Dict[Queue, PikaCallback]):
         for queue, callback in callbacks.items():
             self.connection.add_callback_threadsafe(
-                lambda: self.channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
+                functools.partial(
+                    self.channel.basic_consume, queue=queue.value, on_message_callback=callback, auto_ack=False
+                )
             )
 
     def run(self):
@@ -112,10 +114,12 @@ class RabbitmqClient(threading.Thread):
     def _send_output(self, queue: Queue, message: str):
         body: bytes = message.encode("utf-8")
         self.connection.add_callback_threadsafe(
-            lambda: self.channel.basic_publish(exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body)
+            functools.partial(
+                self.channel.basic_publish, exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body
+            )
         )
 
     def _stop_rabbitmq(self):
         self.rabbitmq_is_running = False
         if self.connection:
-            self.connection.add_callback_threadsafe(lambda: self.connection.close())
+            self.connection.add_callback_threadsafe(self.connection.close)
