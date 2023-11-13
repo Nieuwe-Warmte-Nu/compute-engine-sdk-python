@@ -3,7 +3,7 @@ import functools
 import logging
 import threading
 from enum import Enum
-from typing import Callable, Dict
+from typing import Callable, Dict, Optional
 from uuid import uuid4
 
 import pika
@@ -37,18 +37,21 @@ class Queue(Enum):
 
 
 class RabbitmqClient(threading.Thread):
+    rabbitmq_callbacks: Dict[Queue, PikaCallback]
     rabbitmq_is_running: bool
     rabbitmq_config: RabbitmqConfig
     rabbitmq_exchange: str
-    connection: pika.BlockingConnection
-    channel: BlockingChannel
-    queue: str
+    rabbitmq_connection: Optional[pika.BlockingConnection]
+    rabbitmq_channel: Optional[BlockingChannel]
 
     def __init__(self, config: RabbitmqConfig):
         super().__init__()
+        self.rabbitmq_callbacks = {}
         self.rabbitmq_is_running = False
         self.rabbitmq_config = config
         self.rabbitmq_exchange = config.exchange_name
+        self.rabbitmq_connection = None
+        self.rabbitmq_channel = None
 
     def _connect_rabbitmq(self):
         # initialize rabbitmq connection
@@ -69,14 +72,21 @@ class RabbitmqClient(threading.Thread):
             connection_attempts=10,
         )
 
-        self.connection = pika.BlockingConnection(parameters)
+        if not self.rabbitmq_connection or self.rabbitmq_connection.is_closed:
+            LOGGER.info("Setting up a new connection to RabbitMQ.")
+            self.rabbitmq_connection = pika.BlockingConnection(parameters)
 
-        self.channel = self.connection.channel()
-        self.channel.basic_qos(prefetch_size=0, prefetch_count=1)
-        self.channel.exchange_declare(exchange=self.rabbitmq_exchange, exchange_type="topic")
-        for queue_item in Queue:
-            queue = self.channel.queue_declare(queue_item.value, exclusive=False).method.queue
-            self.channel.queue_bind(queue, self.rabbitmq_exchange, routing_key=queue_item.value)
+        if not self.rabbitmq_channel or self.rabbitmq_channel.is_closed:
+            LOGGER.info("Setting up a new channel to RabbitMQ.")
+            self.rabbitmq_channel = self.rabbitmq_connection.channel()
+            self.rabbitmq_channel.basic_qos(prefetch_size=0, prefetch_count=1)
+            self.rabbitmq_channel.exchange_declare(exchange=self.rabbitmq_exchange, exchange_type="topic")
+            for queue_item in Queue:
+                queue = self.rabbitmq_channel.queue_declare(queue_item.value, exclusive=False).method.queue
+                self.rabbitmq_channel.queue_bind(queue, self.rabbitmq_exchange, routing_key=queue_item.value)
+
+            for queue, callback in self.rabbitmq_callbacks.items():
+                self.rabbitmq_channel.basic_consume(queue=queue.value, on_message_callback=callback, auto_ack=False)
         LOGGER.info("Connected to RabbitMQ")
 
     def _start_rabbitmq(self):
@@ -84,10 +94,11 @@ class RabbitmqClient(threading.Thread):
         self.start()
 
     def set_callbacks(self, callbacks: Dict[Queue, PikaCallback]):
+        self.rabbitmq_callbacks.update(callbacks)
         for queue, callback in callbacks.items():
-            self.connection.add_callback_threadsafe(
+            self.rabbitmq_connection.add_callback_threadsafe(
                 functools.partial(
-                    self.channel.basic_consume, queue=queue.value, on_message_callback=callback, auto_ack=False
+                    self.rabbitmq_channel.basic_consume, queue=queue.value, on_message_callback=callback, auto_ack=False
                 )
             )
 
@@ -98,9 +109,12 @@ class RabbitmqClient(threading.Thread):
             try:
                 LOGGER.info("Waiting for input...")
                 while self.rabbitmq_is_running:
-                    self.connection.process_data_events(time_limit=1)
+                    self.rabbitmq_channel._process_data_events(time_limit=1)
             except pika.exceptions.ConnectionClosedByBroker as exc:
                 LOGGER.info('Connection was closed by broker. Reason: "%s". Shutting down...', exc.reply_text)
+            except pika.exceptions.ChannelClosedByBroker as exc:
+                LOGGER.info('Channel was closed by broker. Reason: "%s". retrying...', exc.reply_text)
+                self._connect_rabbitmq()
             except pika.exceptions.AMQPConnectionError:
                 LOGGER.info("Connection was lost, retrying...")
                 self._connect_rabbitmq()
@@ -113,13 +127,13 @@ class RabbitmqClient(threading.Thread):
 
     def _send_output(self, queue: Queue, message: str):
         body: bytes = message.encode("utf-8")
-        self.connection.add_callback_threadsafe(
+        self.rabbitmq_connection.add_callback_threadsafe(
             functools.partial(
-                self.channel.basic_publish, exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body
+                self.rabbitmq_channel.basic_publish, exchange=self.rabbitmq_exchange, routing_key=queue.value, body=body
             )
         )
 
     def _stop_rabbitmq(self):
         self.rabbitmq_is_running = False
-        if self.connection:
-            self.connection.add_callback_threadsafe(self.connection.close)
+        if self.rabbitmq_connection:
+            self.rabbitmq_connection.add_callback_threadsafe(self.rabbitmq_connection.close)
